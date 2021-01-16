@@ -1,0 +1,28 @@
+{
+  "name": "youtofy-node",
+  "version": "1.0.0",
+  "description": "Script to turn youtube playlist to spotify playlist",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KianSalehi/Youtofy-Node-js.git"
+  },
+  "author": "Kian Salehi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KianSalehi/Youtofy-Node-js/issues"
+  },
+  "homepage": "https://github.com/KianSalehi/Youtofy-Node-js#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "google-auth-library": "^6.1.4",
+    "googleapis": "^67.0.0",
+    "spotify-web-api-node": "^5.0.0"
+  },
+  "devDependencies": {
+    "request": "^2.88.2"
+  }
+}
