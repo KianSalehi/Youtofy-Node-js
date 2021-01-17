@@ -18,6 +18,47 @@ app.get('/login', (req, res) => {
     res.redirect(spotifyApi.createAuthorizeURL(scopes));
 });
 
+app.get('/callback', (req,res)=>{
+    const error = req.query.error;
+    const code = req.query.code;
+    const state = req.query.state;
+    if (error) {
+        console.error('Callback Error:', error);
+        res.send(`Callback Error: ${error}`);
+        return;
+    }
+    spotifyApi
+        .authorizationCodeGrant(code)
+        .then(data => {
+            const access_token = data.body['access_token'];
+            const refresh_token = data.body['refresh_token'];
+            const expires_in = data.body['expires_in'];
+
+            spotifyApi.setAccessToken(access_token);
+            spotifyApi.setRefreshToken(refresh_token);
+
+            console.log('access_token:', access_token);
+            console.log('refresh_token:', refresh_token);
+
+            console.log(
+                `Sucessfully retreived access token. Expires in ${expires_in} s.`
+            );
+            res.send('Success! You can now close the window.');
+
+            setInterval(async () => {
+                const data = await spotifyApi.refreshAccessToken();
+                const access_token = data.body['access_token'];
+                console.log('The access token has been refreshed!');
+                console.log('access_token:', access_token);
+                spotifyApi.setAccessToken(access_token);
+            }, expires_in / 2 * 1000);
+        })
+        .catch(error => {
+            console.error('Error getting Tokens:', error);
+            res.send(`Error getting Tokens: ${error}`);
+        });
+});
+
 //Page to store youtube URL
 app.get('/YoutubeURLInfo', (req, res) => {
     // Prepare output in JSON format
@@ -28,7 +69,7 @@ app.get('/YoutubeURLInfo', (req, res) => {
     ID=ID.split("&");
     ID=ID[0];
     let youtubeID = ID;
-    res.redirect('login')
+    res.redirect('/login');
     itemsFinder(youtube, youtubeID);
 })
 
@@ -50,6 +91,7 @@ const spotifyApi = new SpotifyWebApi({
     clientId: clientID,
     clientSecret: clientSecret
 });
+
 //function to get the items in a youtube playlist
 function itemsFinder(youtube, playlistID) {
     youtube.playlistItems.list({
@@ -89,7 +131,7 @@ function itemsFinder(youtube, playlistID) {
                 else{
                     listOfNames[i] = listOfSongs[i].snippet.title;
                 }
-        }
+            }
         }
         youtube.playlists.list({
             "part": ["snippet"],
@@ -103,8 +145,9 @@ function itemsFinder(youtube, playlistID) {
                     listOfNames.splice(i,1);
                 }
             }
-            console.log(listOfNames);
-            spotifyLogIn(nameOfThePlaylist, listOfNames);
+            console.log(nameOfThePlaylist);
+            makeSpotifyPlaylist(spotifyApi, playlistName, NamesList);
+            console.log(nameOfThePlaylist);
         }).catch(error=>{
             console.error(error);
         })
@@ -113,58 +156,6 @@ function itemsFinder(youtube, playlistID) {
         console.error(error);
     });
 }
-//function to sign in spotify
-function spotifyLogIn(nameOfThePlaylist, listOfNames) {
-
-
-    app.get('/login', (req, res) => {
-        res.redirect(spotifyApi.createAuthorizeURL(scopes));
-    });
-    app.get('/callback', (req,res)=>{
-        const error = req.query.error;
-        const code = req.query.code;
-        const state = req.query.state;
-        if (error) {
-            console.error('Callback Error:', error);
-            res.send(`Callback Error: ${error}`);
-            return;
-        }
-        spotifyApi
-            .authorizationCodeGrant(code)
-            .then(data => {
-                const access_token = data.body['access_token'];
-                const refresh_token = data.body['refresh_token'];
-                const expires_in = data.body['expires_in'];
-
-                spotifyApi.setAccessToken(access_token);
-                spotifyApi.setRefreshToken(refresh_token);
-
-                console.log('access_token:', access_token);
-                console.log('refresh_token:', refresh_token);
-
-                console.log(
-                    `Sucessfully retreived access token. Expires in ${expires_in} s.`
-                );
-                res.send('Success! You can now close the window.');
-                makeSpotifyPlaylist(spotifyApi, nameOfThePlaylist, listOfNames);
-                setInterval(async () => {
-                    const data = await spotifyApi.refreshAccessToken();
-                    const access_token = data.body['access_token'];
-
-                    console.log('The access token has been refreshed!');
-                    console.log('access_token:', access_token);
-                    spotifyApi.setAccessToken(access_token);
-                }, expires_in / 2 * 1000);
-            })
-            .catch(error => {
-                console.error('Error getting Tokens:', error);
-                res.send(`Error getting Tokens: ${error}`);
-            });
-    });
-
-
-}
-//function to check what songs are not found on spotify
 
 //function to make a spotify playlist
 function makeSpotifyPlaylist(spotifyApi, playlistName, SongNames){
@@ -185,7 +176,7 @@ function searchSong(spotifyApi, playlistID, songNames){
         spotifyApi.searchTracks(`${songNames[i]}`)
             .then(data=>{
                 if (data.body.tracks.items[0] != undefined){
-                tracks.push(data.body.tracks.items[0].uri);}
+                    tracks.push(data.body.tracks.items[0].uri);}
                 if (i==(songNames.length-1)){
                     addSongsToSpotifyPlaylist(spotifyApi, playlistID, tracks);
                 }
