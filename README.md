@@ -4,10 +4,10 @@ This web application converts Youtube playlists to spotify playlists
 
 ## Installation
 
-To install the needed libraries you can run:
+To install the needed modules you can install the modules listed in the package.json using:
 
 ```bash
- npm install package.json 
+ npm install <package-name> 
 ```
 in terminal.
 
